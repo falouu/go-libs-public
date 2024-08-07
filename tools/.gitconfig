@@ -1,0 +1,2 @@
+[core]
+    hooksPath = tools/git-hooks
