@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"github.com/falouu/go-libs-public/dev-env/build-script/api"
 	"github.com/sirupsen/logrus"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +24,7 @@ func Run(spec *Specification) error {
 
 	requirementEnvironment := requirementEnvironment{buildDir: buildDir}
 	addToPath := []string{}
+	appendToBashRc := []*api.Template{}
 
 	for i := range spec.Requirements {
 		req := spec.Requirements[i]
@@ -33,18 +35,19 @@ func Run(spec *Specification) error {
 		}
 
 		addToPath = append(addToPath, result.AddToPath...)
+		appendToBashRc = append(appendToBashRc, result.BashRcAppend)
 	}
-	return startShell(addToPath)
+	return startShell(addToPath, appendToBashRc, spec.PromptText)
 }
 
-func startShell(addToPath []string) error {
+func startShell(addToPath []string, appendToBashRc []*api.Template, promptText string) error {
 
 	bashPath, err := exec.LookPath("bash")
 	if err != nil {
 		return err
 	}
 
-	bashInitFile, err := createBashInitFile(addToPath)
+	bashInitFile, err := createBashInitFile(addToPath, appendToBashRc, promptText)
 	if err != nil {
 		return err
 	}
@@ -60,27 +63,42 @@ func startShell(addToPath []string) error {
 	return cmd.Run()
 }
 
-func createBashInitFile(addToPath []string) (path string, err error) {
+func createBashInitFile(addToPath []string, append []*api.Template, promptText string) (path string, err error) {
 	bashInitFile, err := os.CreateTemp("", "go-build-script-bash-init-")
 	if err != nil {
 		return "", err
 	}
 
-	initFileTmpl, err := template.New("").Parse(bashInitFileTemplate)
+	templateText := bashInitFileTemplate
+	extra := map[string]any{}
+	for _, appendTemplate := range append {
+		templateText += "\n" + appendTemplate.Template
+		maps.Copy(extra, appendTemplate.Args)
+	}
+
+	initFileTmpl, err := template.New("").Parse(templateText)
 	if err != nil {
 		return "", err
 	}
 
 	addToPathString := strings.Join(addToPath, ":")
 
+	if promptText == "" {
+		promptText = "buildscript"
+	}
 	err = initFileTmpl.Execute(bashInitFile, struct {
-		AddToPath string
+		AddToPath  string
+		PromptText string
+		Extra      map[string]any
 	}{
-		AddToPath: addToPathString,
+		AddToPath:  addToPathString,
+		Extra:      extra,
+		PromptText: promptText,
 	})
 	if err != nil {
 		return "", err
 	}
+
 	return bashInitFile.Name(), bashInitFile.Sync()
 }
 

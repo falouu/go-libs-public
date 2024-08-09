@@ -2,4 +2,4 @@ source ~/.bashrc
 {{if .AddToPath -}}
 export PATH="{{.AddToPath}}:$PATH"
 {{end -}}
-PS1="[buildscript] ${PS1}"
+PS1="[{{.PromptText}}] ${PS1}"
