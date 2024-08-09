@@ -1,6 +1,7 @@
-package buildscript
+package console_shell
 
 import (
+	"github.com/falouu/go-libs-public/dev-env/build-script/api"
 	"os"
 	"testing"
 
@@ -12,7 +13,7 @@ func TestCreateBashInitFile(t *testing.T) {
 
 	// err := startShell([]string{})
 
-	resultFile, err := createBashInitFile([]string{})
+	resultFile, err := createBashInitFile([]string{}, []*api.Template{}, "")
 	defer os.Remove(resultFile)
 
 	require.NoError(t, err)
