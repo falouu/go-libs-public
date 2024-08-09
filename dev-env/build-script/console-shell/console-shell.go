@@ -13,7 +13,8 @@ import (
 
 type Specification = api.Specification
 
-func Run(spec *Specification, rootDir string) error {
+func Run(spec *Specification) error {
+	rootDir := spec.RootDir
 	buildDir := filepath.Join(rootDir, ".build")
 	if err := os.MkdirAll(buildDir, 0700); err != nil {
 		return err

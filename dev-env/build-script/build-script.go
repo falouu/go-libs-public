@@ -29,5 +29,6 @@ func Run(spec *Specification) error {
 			rootDir = filepath.Join(rootDir, spec.RootDir)
 		}
 	}
-	return console_shell.Run(spec, rootDir)
+	spec.RootDir = rootDir
+	return console_shell.Run(spec)
 }
