@@ -25,6 +25,7 @@ type Script interface {
 }
 
 type Options struct {
+	// command line options specification, as accepted by kong library
 	CLI             interface{}
 	Description     string
 	DynamicCommands DynamicCommands

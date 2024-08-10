@@ -31,6 +31,11 @@ func (e *ErrorWithCause) Error() string {
 	return msg
 }
 
+// implements interface used by errors.Is(), errors.Unwrap()
+func (e *ErrorWithCause) Unwrap() error {
+	return e.Cause
+}
+
 func Wrap(err error, msg string, args ...interface{}) error {
 	return &ErrorWithCause{
 		Cause:                 err,
