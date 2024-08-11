@@ -136,7 +136,7 @@ func initScript(options *Options) (Script, error) {
 		LogLevel           string             `help:"Set log level"`
 	}
 
-	appName, appPath := getAppNameAndPath(cwd)
+	appName, appPath := getAppNameAndPath(cwd, file)
 
 	appScriptpath := os.Getenv(string(APP_SCRIPTPATH))
 	if err := os.Unsetenv(string(APP_SCRIPTPATH)); err != nil {
@@ -319,18 +319,20 @@ func resolveHome(path string) string {
 	return "${HOME}/" + rel
 }
 
-func getAppNameAndPath(cwd string) (name string, pathAbs string) {
+func getAppNameAndPath(cwd string, goScriptPath string) (name string, pathAbs string) {
 	arg0 := os.Getenv(string(APP_ARG_0))
 	os.Unsetenv(string(APP_ARG_0))
 	if arg0 == "" {
 		arg0 = os.Args[0]
+		pathAbs = goScriptPath
+	} else {
+		pathAbs = arg0
+		if !filepath.IsAbs(pathAbs) {
+			pathAbs = filepath.Join(cwd, pathAbs)
+		}
+		pathAbs = filepath.Clean(pathAbs)
 	}
 
-	pathAbs = arg0
-	if !filepath.IsAbs(pathAbs) {
-		pathAbs = filepath.Join(cwd, pathAbs)
-	}
-	pathAbs = filepath.Clean(pathAbs)
 	name = filepath.Base(arg0)
 	return
 }
