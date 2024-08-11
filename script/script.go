@@ -25,6 +25,9 @@ type Script interface {
 	// returns script lines you can execute in bash, or put in .bashrc file to have an alias, and autocompletions for
 	// this script
 	GetInstallCompletionsScript() string
+	// returns script alias that is used as app name in help text, and also installed by GetInstallCompletionsScript
+	// as an alias user can run and receive completions
+	ScriptAlias() string
 	// print usage - specific for app arguments provided
 	PrintUsage()
 	// print usage and exit - not specific to arguments provided - just like running 'app --help'
@@ -160,6 +163,7 @@ func initScript(options *Options) (Script, error) {
 
 type script struct {
 	// name is used for example in help text - it should be equal to real command the user called
+	// it will also be used as an alias in completion script
 	name string
 	// absolute path to go script (with main() method)
 	filepath string
@@ -187,6 +191,10 @@ func (s *script) GetInstallCompletionsScript() string {
 	return "" +
 		"alias " + s.name + "='" + path + "'\n" +
 		"complete -C \"" + path + "\" " + s.name + "\n"
+}
+
+func (s *script) ScriptAlias() string {
+	return s.name
 }
 
 func (s *script) PrintUsage() {
