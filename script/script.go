@@ -17,8 +17,13 @@ import (
 )
 
 type Script interface {
-	// Dir directory where go script (with main() method) is located. Absolute path
+	// Dir directory where *.go script (with main() method) is located. Absolute path
 	Dir() string
+	// ScriptFileName filename of *.go script (with main() method)
+	ScriptFileName() string
+	// ScriptAlias returns script alias that is used as app name in help text, and also installed by GetInstallCompletionsScript
+	// as an alias user can run and receive completions
+	ScriptAlias() string
 	// Cwd directory from where go script was called
 	Cwd() string
 	// RunCommand run command selected by Kong CLI based on command line arguments
@@ -26,9 +31,6 @@ type Script interface {
 	// GetInstallCompletionsScript returns script lines you can execute in bash, or put in .bashrc file to have an alias, and autocompletions for
 	// this script
 	GetInstallCompletionsScript() string
-	// ScriptAlias returns script alias that is used as app name in help text, and also installed by GetInstallCompletionsScript
-	// as an alias user can run and receive completions
-	ScriptAlias() string
 	// PrintUsage print usage - specific for app arguments provided
 	PrintUsage()
 	// PrintAppUsageAndExit print usage and exit - not specific to arguments provided - just like running 'app --help'
@@ -206,6 +208,10 @@ type script struct {
 
 func (s *script) Dir() string {
 	return filepath.Dir(s.filepath)
+}
+
+func (s *script) ScriptFileName() string {
+	return filepath.Base(s.filepath)
 }
 
 func (s *script) Cwd() string {
