@@ -25,6 +25,10 @@ type Script interface {
 	// returns script lines you can execute in bash, or put in .bashrc file to have an alias, and autocompletions for
 	// this script
 	GetInstallCompletionsScript() string
+	// print usage - specific for app arguments provided
+	PrintUsage()
+	// print usage and exit - not specific to arguments provided - just like running 'app --help'
+	PrintAppUsageAndExit()
 }
 
 // Name of environment variables the caller can provide to influence the script.
@@ -183,6 +187,15 @@ func (s *script) GetInstallCompletionsScript() string {
 	return "" +
 		"alias " + s.name + "='" + path + "'\n" +
 		"complete -C \"" + path + "\" " + s.name + "\n"
+}
+
+func (s *script) PrintUsage() {
+	s.kongCtx.PrintUsage(false)
+}
+
+func (s *script) PrintAppUsageAndExit() {
+	_, err := s.kongCtx.Parse([]string{"--help"})
+	s.kongCtx.FatalIfErrorf(err)
 }
 
 type InstallCompletions bool
