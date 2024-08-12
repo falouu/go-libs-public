@@ -78,6 +78,11 @@ type Options struct {
 	ExitFunc func(code int)
 }
 
+func (o Options) GetDefaults() *Options {
+	copy := defaultOptions
+	return &copy
+}
+
 func InitCustom(modifyOptions func(options *Options)) (Script, error) {
 	options := defaultOptions
 	modifyOptions(&options)
