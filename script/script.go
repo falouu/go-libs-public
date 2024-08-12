@@ -112,10 +112,10 @@ var defaultOptions = Options{
 	},
 }
 
-// old shebang, worked fine in the past and may work better for example on linux.
+// old shebang, worked fine in the past, but stopped working on macos
 // var shebang = `///bin/true; export APP_CWD="$(pwd)" && cd "$(dirname "$0")" && exec /usr/bin/env go run "$0" "$@"`
 
-// this shebang worked better on macos as of 2024-08, than the one above. TODO: check on linux
+// this shebang worked better on macos as of 2024-08, than the one above. Also works on ubuntu as of 2024-08
 var shebang = fmt.Sprintf(``+
 	`/// 2>/dev/null; `+
 	`export %v="$(pwd)" && `+
