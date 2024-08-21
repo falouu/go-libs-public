@@ -76,6 +76,21 @@ type Options struct {
 	Writers Writers
 	// ExitFunc custom "exit program in case of parsing error" function. Default os.Exit. Useful for testing
 	ExitFunc func(code int)
+	bind     *bindToInterface
+}
+
+// This is the only way to be able to use interface arguments in command Run(args). 
+// `RunCommand(someStruct)` works only if the the command `Run(arg)` method has arg of `someStruct` type specifically, 
+// not an interface which `someStruct` implements.
+//
+// use it like this: 
+//   BindToInterface(&interfaceImplementation, (*InterfaceType)(nil))
+func (o *Options) BindToInterface(impl, iface any) {
+	// TODO: check if value implements iface
+	o.bind = &bindToInterface{
+		Interface:      iface,
+		Implementation: impl,
+	}
 }
 
 func (o Options) GetDefaults() *Options {
@@ -110,6 +125,7 @@ var defaultOptions = Options{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	},
+	Plugins: Plugins{},
 }
 
 // old shebang, worked fine in the past, but stopped working on macos
@@ -170,6 +186,10 @@ func initScript(options *Options) (Script, error) {
 	kongOptions = append(kongOptions, options.DynamicCommands.toKong()...)
 	if options.ExitFunc != nil {
 		kongOptions = append(kongOptions, kong.Exit(options.ExitFunc))
+	}
+
+	if options.bind != nil {
+		kongOptions = append(kongOptions, kong.BindTo(options.bind.Implementation, options.bind.Interface))
 	}
 
 	kongParser := kong.Must(&cli, kongOptions...)
@@ -340,4 +360,9 @@ func getAppNameAndPath(cwd string, goScriptPath string) (name string, pathAbs st
 
 	name = filepath.Base(arg0)
 	return
+}
+
+type bindToInterface struct {
+	Interface      any
+	Implementation any
 }
