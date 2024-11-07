@@ -7,13 +7,46 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"reflect"
 )
 
-type FetcherFn func() (result interface{}, err error, shouldCache bool)
+type fetchFn[T any] func() (result *T, err error, shouldcache bool)
+
+func Fetch[T any](fn fetchFn[T]) *Fetcher[T] {
+	return &Fetcher[T]{
+		fn:     fn,
+	}
+}
+
+type Fetcher[T any] struct {
+	fn fetchFn[T]
+	Result T
+}
+
+func (f *Fetcher[T]) fetcher() fetchFnAny {
+	return func() (result any, err error, shouldcache bool) {
+		return f.fn()
+	}
+}
+
+func (f *Fetcher[T]) setResultPtr(resPtr any){
+	resPtrCasted := resPtr.(*T)
+	f.Result = *resPtrCasted
+}
+
+func (f *Fetcher[T]) resultPtr() any {
+	return &f.Result
+}
+
+type fetchFnAny = func() (resultPtr any, err error, shouldcache bool)
+
+type fetcher interface{
+	fetcher() fetchFnAny
+	setResultPtr(res any)
+	resultPtr() any
+}
 
 type Cache interface {
-	Get(key string, fetcher FetcherFn, resultTypeHint interface{}) (result interface{}, err error)
+	Get(key string, fetcher fetcher) error
 }
 
 type cacheImpl struct {
@@ -27,29 +60,28 @@ func NewCache(useCache bool, dir string) Cache {
 	return &cacheImpl{useCache: useCache, dir: dir, log: logrus.WithField("src", "cache")}
 }
 
-func (c *cacheImpl) Get(key string, fetcher FetcherFn, ptrToCached interface{}) (result interface{}, err error) {
+func (c *cacheImpl) Get(key string, fetcher fetcher) (err error) {
 	cachedExists := false
 	if c.useCache {
-		cachedExists, err = c.tryGetCached(key, ptrToCached)
+		cachedExists, err = c.tryGetCached(key, fetcher)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if cachedExists {
 		c.log.Debug("Using cached value for key ", key)
-		result = reflect.Indirect(reflect.ValueOf(ptrToCached)).Interface()
 	} else {
 		c.log.Debug("Calculating value for key ", key)
-		var fetcherError error
-		var shouldCache bool
-		result, fetcherError, shouldCache = fetcher()
+		resultPtr, fetcherError, shouldCache := fetcher.fetcher()()
 		if fetcherError != nil {
 			err = fetcherError
-			return result, err
+			return err
 		}
+		fetcher.setResultPtr(resultPtr)
+
 		if shouldCache {
-			warn := c.cache(key, result)
+			warn := c.cache(key, resultPtr)
 			if warn != nil {
 				c.log.Error(b.Wrap(warn, "failed to cache entry '%v'", key))
 			}
@@ -59,7 +91,7 @@ func (c *cacheImpl) Get(key string, fetcher FetcherFn, ptrToCached interface{}) 
 	return
 }
 
-func (c *cacheImpl) tryGetCached(key string, ptrToCached interface{}) (bool, error) {
+func (c *cacheImpl) tryGetCached(key string, fetcher fetcher) (bool, error) {
 
 	bytes, err := ioutil.ReadFile(c.path(key))
 	if err != nil {
@@ -70,7 +102,7 @@ func (c *cacheImpl) tryGetCached(key string, ptrToCached interface{}) (bool, err
 		}
 	}
 
-	err = json.Unmarshal(bytes, ptrToCached)
+	err = json.Unmarshal(bytes, fetcher.resultPtr())
 	if err != nil {
 		return false, err
 	}
@@ -83,13 +115,13 @@ func (c *cacheImpl) path(key string) string {
 	return filepath.Join(c.dir, key+".json")
 }
 
-func (c *cacheImpl) cache(key string, val interface{}) error {
+func (c *cacheImpl) cache(key string, valPtr any) error {
 	err := os.MkdirAll(c.dir, 0700)
 	if err != nil {
 		return err
 	}
 
-	bytes, err := json.MarshalIndent(val, "", " ")
+	bytes, err := json.MarshalIndent(valPtr, "", " ")
 	if err != nil {
 		return err
 	}
