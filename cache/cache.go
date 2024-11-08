@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"bytes"
 	"encoding/json"
 	"github.com/falouu/go-libs-public/b"
 	"github.com/sirupsen/logrus"
@@ -9,16 +10,16 @@ import (
 	"path/filepath"
 )
 
-type fetchFn[T any] func() (result *T, err error, shouldcache bool)
+type fetchFn[T any] func() (result *T, err error, shouldCacheSuccess bool)
 
 func Fetch[T any](fn fetchFn[T]) *Fetcher[T] {
 	return &Fetcher[T]{
-		fn:     fn,
+		fn: fn,
 	}
 }
 
 type Fetcher[T any] struct {
-	fn fetchFn[T]
+	fn     fetchFn[T]
 	Result T
 }
 
@@ -28,7 +29,7 @@ func (f *Fetcher[T]) fetcher() fetchFnAny {
 	}
 }
 
-func (f *Fetcher[T]) setResultPtr(resPtr any){
+func (f *Fetcher[T]) setResultPtr(resPtr any) {
 	resPtrCasted := resPtr.(*T)
 	f.Result = *resPtrCasted
 }
@@ -39,7 +40,7 @@ func (f *Fetcher[T]) resultPtr() any {
 
 type fetchFnAny = func() (resultPtr any, err error, shouldcache bool)
 
-type fetcher interface{
+type fetcher interface {
 	fetcher() fetchFnAny
 	setResultPtr(res any)
 	resultPtr() any
@@ -102,7 +103,7 @@ func (c *cacheImpl) tryGetCached(key string, fetcher fetcher) (bool, error) {
 		}
 	}
 
-	err = json.Unmarshal(bytes, fetcher.resultPtr())
+	err = unmarshal(bytes, fetcher.resultPtr())
 	if err != nil {
 		return false, err
 	}
@@ -121,7 +122,7 @@ func (c *cacheImpl) cache(key string, valPtr any) error {
 		return err
 	}
 
-	bytes, err := json.MarshalIndent(valPtr, "", " ")
+	bytes, err := marshal(valPtr)
 	if err != nil {
 		return err
 	}
@@ -133,4 +134,23 @@ func (c *cacheImpl) cache(key string, valPtr any) error {
 	}
 
 	return ioutil.WriteFile(path, bytes, 0600)
+}
+
+func marshal(valPtr any) ([]byte, error) {
+	if valBytes, ok := valPtr.(*[]byte); ok {
+		dst := bytes.NewBuffer(make([]byte, 0, int(float64(len(*valBytes))*1.3)))
+		err := json.Indent(dst, *valBytes, "", " ")
+		return dst.Bytes(), err
+	} else {
+		return json.MarshalIndent(valPtr, "", " ")
+	}
+}
+
+func unmarshal(data []byte, resultPtr any) error {
+	if resultBytes, ok := resultPtr.(*[]byte); ok {
+		*resultBytes = data
+		return nil
+	} else {
+		return json.Unmarshal(data, resultPtr)
+	}
 }
