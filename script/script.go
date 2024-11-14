@@ -3,7 +3,9 @@ package script
 import (
 	"errors"
 	"fmt"
+	"github.com/posener/complete"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -76,15 +78,21 @@ type Options struct {
 	Writers Writers
 	// ExitFunc custom "exit program in case of parsing error" function. Default os.Exit. Useful for testing
 	ExitFunc func(code int)
-	bind     *bindToInterface
+
+	// Used for predicting script args in terminal.
+	// map of predictor-name -> predictor. To use them, include `predictor:"name"` in kong struct field tag.
+	//  Check kongplete README for info
+	Predictors map[string]complete.Predictor
+	bind       *bindToInterface
 }
 
-// This is the only way to be able to use interface arguments in command Run(args). 
-// `RunCommand(someStruct)` works only if the the command `Run(arg)` method has arg of `someStruct` type specifically, 
+// This is the only way to be able to use interface arguments in command Run(args).
+// `RunCommand(someStruct)` works only if the the command `Run(arg)` method has arg of `someStruct` type specifically,
 // not an interface which `someStruct` implements.
 //
-// use it like this: 
-//   BindToInterface(&interfaceImplementation, (*InterfaceType)(nil))
+// use it like this:
+//
+//	BindToInterface(&interfaceImplementation, (*InterfaceType)(nil))
 func (o *Options) BindToInterface(impl, iface any) {
 	// TODO: check if value implements iface
 	o.bind = &bindToInterface{
@@ -125,7 +133,8 @@ var defaultOptions = Options{
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
 	},
-	Plugins: Plugins{},
+	Plugins:    Plugins{},
+	Predictors: map[string]complete.Predictor{},
 }
 
 // old shebang, worked fine in the past, but stopped working on macos
@@ -198,7 +207,10 @@ func initScript(options *Options) (Script, error) {
 	// 	return nil, err
 	// }
 
-	kongplete.Complete(kongParser, kongplete.WithPredictors(options.DynamicCommands.Predictors()))
+	predictors := maps.Clone(options.DynamicCommands.Predictors())
+	maps.Copy(predictors, options.Predictors)
+
+	kongplete.Complete(kongParser, kongplete.WithPredictors(predictors))
 
 	script.kongCtx, err = kongParser.Parse(os.Args[1:])
 	kongParser.FatalIfErrorf(err)
