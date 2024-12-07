@@ -3,7 +3,6 @@ package script
 import (
 	"errors"
 	"fmt"
-	"github.com/posener/complete"
 	"io"
 	"maps"
 	"os"
@@ -11,6 +10,8 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+
+	"github.com/posener/complete"
 
 	"github.com/alecthomas/kong"
 	"github.com/falouu/go-libs-public/b"
@@ -256,7 +257,7 @@ func (s *script) Cwd() string {
 }
 
 func (s *script) RunCommand(context ...any) error {
-	return s.kongCtx.Run(context)
+	return s.kongCtx.Run(context...)
 }
 
 func (s *script) GetInstallCompletionsScript() string {
