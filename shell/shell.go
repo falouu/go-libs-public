@@ -10,6 +10,7 @@ type Shell interface {
 	Cmd(cmd string, args ...string) Command
 	CmdBuilder() CommandBuilder
 	Run(cmd string, args ...string) RunError
+	// show confirmation prompt and wait for user input
 	Confirm() error
 }
 
