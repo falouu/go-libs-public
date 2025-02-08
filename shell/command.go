@@ -8,6 +8,7 @@ import (
 
 type CommandBuilder interface {
 	Cmd(cmd string, args ...string) Command
+	// the higher the confirmation level, the less likely user will be asked to confirm
 	ConfirmationLevel(level int) CommandBuilder
 }
 
@@ -55,7 +56,6 @@ func (b *commandBuilder) Cmd(cmd string, args ...string) Command {
 	return &c
 }
 
-// the higher the confirmation level, the less likely user will be asked to confirm
 func (b *commandBuilder) ConfirmationLevel(level int) CommandBuilder {
 	b.confirmationLevel = level
 	return b
