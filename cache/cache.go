@@ -24,7 +24,7 @@ type Fetcher[T any] struct {
 }
 
 func (f *Fetcher[T]) fetcher() fetchFnAny {
-	return func() (result any, err error, shouldcache bool) {
+	return func() (result any, err error, shouldcacheSuccess bool) {
 		return f.fn()
 	}
 }
@@ -74,14 +74,14 @@ func (c *cacheImpl) Get(key string, fetcher fetcher) (err error) {
 		c.log.Debug("Using cached value for key ", key)
 	} else {
 		c.log.Debug("Calculating value for key ", key)
-		resultPtr, fetcherError, shouldCache := fetcher.fetcher()()
+		resultPtr, fetcherError, shouldCacheSuccess := fetcher.fetcher()()
 		if fetcherError != nil {
 			err = fetcherError
 			return err
 		}
 		fetcher.setResultPtr(resultPtr)
 
-		if shouldCache {
+		if shouldCacheSuccess {
 			warn := c.cache(key, resultPtr)
 			if warn != nil {
 				c.log.Error(b.Wrap(warn, "failed to cache entry '%v'", key))
