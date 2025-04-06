@@ -30,4 +30,5 @@ type Template struct {
 
 type RequirementEnvironment interface {
 	BuildDir() string
+	RootDir() string
 }

@@ -23,7 +23,7 @@ func Run(spec *Specification) error {
 	}
 	log.Debug("buildDir: ", buildDir)
 
-	requirementEnvironment := requirementEnvironment{buildDir: buildDir}
+	requirementEnvironment := requirementEnvironment{buildDir: buildDir, rootDir: rootDir}
 	addToPath := []string{}
 	appendToBashRc := []*api.Template{}
 
@@ -107,10 +107,15 @@ func createBashInitFile(addToPath []string, append []*api.Template, promptText s
 
 type requirementEnvironment struct {
 	buildDir string
+	rootDir  string
 }
 
 func (e *requirementEnvironment) BuildDir() string {
 	return e.buildDir
+}
+
+func (e *requirementEnvironment) RootDir() string {
+	return e.rootDir
 }
 
 //go:embed bash-init-file.sh

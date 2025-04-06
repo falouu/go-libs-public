@@ -1,9 +1,10 @@
 package buildscript
 
 import (
+	"path/filepath"
+
 	"github.com/falouu/go-libs-public/dev-env/build-script/api"
 	console_shell "github.com/falouu/go-libs-public/dev-env/build-script/console-shell"
-	"path/filepath"
 
 	"github.com/falouu/go-libs-public/script"
 )
@@ -31,4 +32,13 @@ func Run(spec *Specification) error {
 	}
 	spec.RootDir = rootDir
 	return console_shell.Run(spec)
+}
+
+type FuncRequirement func(env RequirementEnvironment) (*RequirementResult, error)
+
+func (f FuncRequirement) Info() *RequirementInfo {
+	return nil
+}
+func (f FuncRequirement) Ensure(env RequirementEnvironment) (*RequirementResult, error) {
+	return f(env)
 }
