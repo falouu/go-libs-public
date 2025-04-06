@@ -2,14 +2,15 @@ package console_shell
 
 import (
 	_ "embed"
-	"github.com/falouu/go-libs-public/dev-env/build-script/api"
-	"github.com/sirupsen/logrus"
 	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/falouu/go-libs-public/dev-env/build-script/api"
+	"github.com/sirupsen/logrus"
 )
 
 type Specification = api.Specification
@@ -35,7 +36,9 @@ func Run(spec *Specification) error {
 		}
 
 		addToPath = append(addToPath, result.AddToPath...)
-		appendToBashRc = append(appendToBashRc, result.BashRcAppend)
+		if result.BashRcAppend != nil {
+			appendToBashRc = append(appendToBashRc, result.BashRcAppend)
+		}
 	}
 	return startShell(addToPath, appendToBashRc, spec.PromptText)
 }
