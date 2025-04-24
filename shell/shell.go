@@ -1,9 +1,9 @@
 package shell
 
 import (
-	"errors"
 	"fmt"
-	"strings"
+
+	terminalutils "github.com/falouu/go-libs-public/terminal/utils"
 )
 
 type Shell interface {
@@ -74,11 +74,5 @@ func (s *shell) preRun(c *command) error {
 }
 
 func (s *shell) Confirm() error {
-	fmt.Print("Confirm [y/N]: ")
-	var answer string
-	fmt.Scanln(&answer)
-	if strings.ToLower(answer) != "y" {
-		return errors.New("command aborted")
-	}
-	return nil
+	return terminalutils.Confirm("command aborted")
 }
