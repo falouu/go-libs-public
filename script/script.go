@@ -15,6 +15,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/falouu/go-libs-public/b"
+	"github.com/falouu/go-libs-public/logging"
 	log "github.com/sirupsen/logrus"
 	"github.com/willabides/kongplete"
 )
@@ -217,11 +218,14 @@ func initScript(options *Options) (Script, error) {
 	kongParser.FatalIfErrorf(err)
 
 	if cli.LogLevel != "" {
-		level, err := log.ParseLevel(cli.LogLevel)
-		if err != nil {
+
+		if err := logging.SetGlobalLevel(cli.LogLevel); err != nil {
 			return nil, err
 		}
-		log.SetLevel(level)
+		// deprecated
+		if err := setLogLevelLogrus(cli.LogLevel); err != nil {
+			return nil, err
+		}
 	}
 
 	log.Debug("script path: " + file)
@@ -229,6 +233,17 @@ func initScript(options *Options) (Script, error) {
 	log.Debug("log level: " + log.GetLevel().String())
 
 	return &script, nil
+}
+
+// deprecated. Remove when all programs/libraries are migrated from Logrus.
+// For current approach see [setLogLevel]
+func setLogLevelLogrus(logLevel string) error {
+	level, err := log.ParseLevel(logLevel)
+	if err != nil {
+		return err
+	}
+	log.SetLevel(level)
+	return nil
 }
 
 type script struct {
