@@ -271,7 +271,14 @@ func (s *script) Cwd() string {
 	return s.cwd
 }
 
+type NoCommandSelected struct {
+	error
+}
+
 func (s *script) RunCommand(context ...any) error {
+	if s.kongCtx.Selected() == nil {
+		return NoCommandSelected{fmt.Errorf("no subcommand selected. If there is Run() method on the main CLI, run it manually")}
+	}
 	return s.kongCtx.Run(context...)
 }
 
