@@ -1,7 +1,9 @@
 package logging
 
+import "log/slog"
+
 var globalLogLevel string
-var globalLogLevelChanger func(level string) error = func(level string) error { return nil }
+var globalLogLevelChanger = DefaultGlobalLevelChanger
 
 func SetGlobalLevel(level string) error {
 	if err := globalLogLevelChanger(level); err != nil {
@@ -13,6 +15,15 @@ func SetGlobalLevel(level string) error {
 
 func GetGlobalLevel() string {
 	return globalLogLevel
+}
+
+func DefaultGlobalLevelChanger(level string) error {
+	var l slog.Level
+	if err := l.UnmarshalText([]byte(level)); err != nil {
+		return err
+	}
+	slog.SetLogLoggerLevel(l)
+	return nil
 }
 
 // program using concrete logging framework is expected to call this
