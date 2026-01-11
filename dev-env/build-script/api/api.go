@@ -29,6 +29,8 @@ type Template struct {
 }
 
 type RequirementEnvironment interface {
+	// gitignored dir for temp files
 	BuildDir() string
+	// set in Specification. Use console_shell.Run*(spec Specification) to fill it automatically
 	RootDir() string
 }
